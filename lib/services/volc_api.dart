@@ -38,13 +38,12 @@ class VolcApi {
       'max_tokens': maxTokens,
     };
     
-    // 只有在启用思考模式时才发送相关参数
+    // 按照服务器端要求的格式发送思考模式参数
+    body['thinking'] = {'type': thinkingMode};
+    
+    // 只有在启用思考模式时才发送reasoning参数
     if (thinkingMode == 'enabled') {
-      body['thinking_mode'] = thinkingMode;
-      body['reasoning_effort'] = reasoningEffort;
-    } else {
-      // 显式禁用
-      body['thinking_mode'] = 'disabled';
+      body['reasoning'] = {'effort': reasoningEffort};
     }
     
     request.body = jsonEncode(body);
