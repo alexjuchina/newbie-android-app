@@ -1,7 +1,7 @@
 name: newbie_android_app
 description: A new Flutter project for Doubao API.
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.4.0+1
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -20,6 +20,10 @@ dependencies:
   image_gallery_saver: ^2.0.2
   path_provider: ^2.1.0
   device_info_plus: ^10.0.0
+  image_picker: ^1.1.2
+  mime: ^1.0.4
+  video_player: ^2.10.1
+  chewie: ^1.13.0
 
 dev_dependencies:
   flutter_test:

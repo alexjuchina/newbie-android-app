@@ -257,7 +257,7 @@ class VolcApi {
     String model = 'doubao-seedance-1-5-pro-251215',
     String ratio = '16:9', // adaptive/16:9/9:16/1:1/4:3/3:4
     int duration = 5, // 5/10
-    String responseFormat = 'url',
+    List<Map<String, String>>? images, // [{'base64': '...', 'role': '...'}]
   }) async {
     // 1. 提交任务获取task_id
     final taskId = await _submitVideoGenerationTask(
@@ -266,7 +266,7 @@ class VolcApi {
       model: model,
       ratio: ratio,
       duration: duration,
-      responseFormat: responseFormat,
+      images: images,
     );
     if (taskId == null) {
       throw Exception("视频生成任务提交失败");
@@ -286,8 +286,24 @@ class VolcApi {
     required String model,
     required String ratio,
     required int duration,
-    required String responseFormat,
+    List<Map<String, String>>? images,
   }) async {
+    final content = <Map<String, dynamic>>[];
+    
+    // Add images if any
+    if (images != null) {
+      for (final img in images) {
+        content.add({
+          'type': 'image_url',
+          'image_url': {'url': img['base64']},
+          'role': img['role'],
+        });
+      }
+    }
+    
+    // Add text prompt
+    content.add({'type': 'text', 'text': prompt});
+
     final response = await http.post(
       Uri.parse(_videoGenerationEndpoint),
       headers: {
@@ -296,10 +312,9 @@ class VolcApi {
       },
       body: jsonEncode({
         'model': model,
-        'prompt': prompt, // Changed from 'content' to 'prompt'
+        'content': content,
         'ratio': ratio,
-        'dur': duration,
-        'response_format': responseFormat,
+        'duration': duration,
       }),
     );
 
@@ -318,7 +333,7 @@ class VolcApi {
   }) async {
     final statusUrl = '$_videoGenerationEndpoint/$taskId';
     int retry = 0;
-    const int maxRetry = 180; // 最多轮询3分钟 (180次 × 1秒)
+    const int maxRetry = 600; // 最多轮询10分钟 (600次 × 1秒)
 
     while (retry < maxRetry) {
       final response = await http.get(
@@ -335,7 +350,9 @@ class VolcApi {
         if (status == 'succeeded') {
           return result;
         } else if (status == 'failed') {
-          throw Exception("视频生成失败: ${result['error_msg'] ?? '未知错误'}");
+          final error = result['error'];
+          final errorMessage = error != null && error['message'] != null ? error['message'] : '未知错误';
+          throw Exception("视频生成失败: $errorMessage");
         }
         // 如果状态是pending或running，继续轮询
       } else {

@@ -20,6 +20,7 @@ class _ImageScreenState extends State<ImageScreen> {
   bool _isLoading = false;
   String? _resultImageUrl;
   String? _errorMessage;
+  Map<String, dynamic>? _statistics;
   String _selectedModelType = 'seedream'; // seedream/jimeng
   
   // Seedream 配置
@@ -77,7 +78,10 @@ class _ImageScreenState extends State<ImageScreen> {
       _isLoading = true;
       _errorMessage = null;
       _resultImageUrl = null;
+      _statistics = null;
     });
+
+    final startTime = DateTime.now();
 
     try {
       if (_selectedModelType == 'seedream') {
@@ -91,10 +95,28 @@ class _ImageScreenState extends State<ImageScreen> {
           maxImages: _seedreamMaxImages,
         );
 
+        final endTime = DateTime.now();
+        final duration = endTime.difference(startTime).inMilliseconds / 1000.0;
+
         final data = result['data'];
         if (data != null && data is List && data.isNotEmpty) {
           setState(() {
             _resultImageUrl = data[0]['url'];
+            
+            // 构建统计信息
+            _statistics = {
+              '尺寸': _seedreamSize.contains('(') 
+                  ? _seedreamSize.substring(_seedreamSize.indexOf('(') + 1, _seedreamSize.indexOf(')'))
+                  : _seedreamSize,
+              'ID': result['request_id'],
+              '模型': _seedreamModel,
+              '耗时': '${duration.toStringAsFixed(2)}秒',
+            };
+            
+            if (result['usage'] != null) {
+              _statistics!['输出Token'] = result['usage']['completion_tokens'];
+              _statistics!['总Token'] = result['usage']['total_tokens'];
+            }
           });
         } else {
           setState(() {
@@ -109,10 +131,19 @@ class _ImageScreenState extends State<ImageScreen> {
           prompt: prompt,
         );
 
+        final endTime = DateTime.now();
+        final duration = endTime.difference(startTime).inMilliseconds / 1000.0;
+
         final urls = result['image_urls'];
         if (urls != null && urls is List && urls.isNotEmpty) {
           setState(() {
             _resultImageUrl = urls[0];
+            
+            // 即梦 API 返回结构可能不同，这里做适配
+            _statistics = {
+              'ID': result['task_id'],
+              '耗时': '${duration.toStringAsFixed(2)}秒',
+            };
           });
         } else {
           setState(() {
@@ -129,6 +160,53 @@ class _ImageScreenState extends State<ImageScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  Widget _buildStatistics() {
+    if (_statistics == null || _statistics!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Card(
+      elevation: 0,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '生成统计',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            ..._statistics!.entries.map((entry) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  children: [
+                    Text(
+                      '${entry.key}: ',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        entry.value.toString(),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ],
+        ),
+      ),
+    );
   }
 
   /// 保存图片到相册
@@ -498,6 +576,11 @@ class _ImageScreenState extends State<ImageScreen> {
                           width: double.infinity,
                         ),
                       ),
+                      const SizedBox(height: 12),
+                      
+                      // 统计信息
+                      _buildStatistics(),
+                      
                       const SizedBox(height: 12),
                       ElevatedButton.icon(
                         onPressed: _saveImage,
