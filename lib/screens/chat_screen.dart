@@ -203,19 +203,42 @@ class _ChatScreenState extends State<ChatScreen> {
                         showDialog(
                           context: context,
                           builder: (context) => AlertDialog(
-                            title: const Text('删除对话'),
-                            content: const Text('确定要删除这条对话记录吗？'),
+                            backgroundColor: const Color(0xFF2C2C2C),
+                            title: const Text(
+                              '删除对话',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            content: const Text(
+                              '确定要删除这条对话记录吗？',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 16,
+                              ),
+                            ),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.pop(context),
-                                child: const Text('取消'),
+                                child: const Text(
+                                  '取消',
+                                  style: TextStyle(fontSize: 16),
+                                ),
                               ),
                               TextButton(
                                 onPressed: () {
                                   chatStore.deleteSession(session.id);
                                   Navigator.pop(context);
                                 },
-                                child: const Text('删除', style: TextStyle(color: Colors.red)),
+                                child: const Text(
+                                  '删除',
+                                  style: TextStyle(
+                                    color: Colors.redAccent,
+                                    fontSize: 16,
+                                  ),
+                                ),
                               ),
                             ],
                           ),

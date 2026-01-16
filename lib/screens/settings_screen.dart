@@ -19,9 +19,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     final config = context.read<ConfigStore>();
-    _arkKeyController.text = config.arkApiKey;
-    _jimengAkController.text = config.jimengAccessKey;
-    _jimengSkController.text = config.jimengSecretKey;
+    _arkKeyController.text = _maskKey(config.arkApiKey);
+    _jimengAkController.text = _maskKey(config.jimengAccessKey);
+    _jimengSkController.text = _maskKey(config.jimengSecretKey);
+    _customModelEpController.text = '';
+  }
+
+  /// 隐藏 API Key 中间部分
+  String _maskKey(String key) {
+    if (key.isEmpty) return '';
+    if (key.length <= 2) return key;
+    return '${key.substring(0, 1)}******${key.substring(key.length - 1)}';
   }
 
   @override
@@ -35,9 +43,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _save() async {
     final config = context.read<ConfigStore>();
-    await config.setArkApiKey(_arkKeyController.text.trim());
-    await config.setJimengAccessKey(_jimengAkController.text.trim());
-    await config.setJimengSecretKey(_jimengSkController.text.trim());
+    
+    String getRealValue(String input, String original) {
+      if (input == _maskKey(original)) {
+        return original;
+      }
+      return input;
+    }
+
+    await config.setArkApiKey(getRealValue(_arkKeyController.text.trim(), config.arkApiKey));
+    await config.setJimengAccessKey(getRealValue(_jimengAkController.text.trim(), config.jimengAccessKey));
+    await config.setJimengSecretKey(getRealValue(_jimengSkController.text.trim(), config.jimengSecretKey));
     
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -283,7 +299,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
-                    obscureText: true,
                     style: TextStyle(color: colorScheme.onSurface),
                   ),
                 ],
@@ -303,6 +318,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             child: const Text('保存配置'),
           ),
+          
+          const SizedBox(height: 24),
+          Center(
+            child: Text(
+              '当前版本 v1.4.0',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 12,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
         ],
       ),
     );
